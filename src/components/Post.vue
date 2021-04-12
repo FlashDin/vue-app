@@ -39,20 +39,14 @@
     </table>
     <br/>
     <div class="pagination">
-        <a :href="'?_page=' + (parseInt(this._page) - 1) + '&_limit=' + this._limit + '&q=' + this.keyword"
-           @click.prevent="function(e) {
-                let uri = new URL(e.target.href);
-                window.history.pushState('', '', uri.search);
-                this._page = uri.searchParams.get('_page');
-                this.getDataAllData();
-                this.getData();
-        }">&laquo;</a>
-        <template v-for="v, i in this.pageNum">
+        <a :href="'?_page=' + (parseInt(this.xpage) - 1) + '&_limit=' + this.xlimit + '&q=' + this.keyword"
+           @click.prevent="nextPrev">&laquo;</a>
+        <template :key="i" v-for="v, i in this.pageNum">
             <a :href="v"
-               @click.prevent="nextPrev" :class="this._page.toString() === (i + 1).toString() ? 'active' : ''">{{i +
+               @click.prevent="nextPrev" :class="this.xpage.toString() === (i + 1).toString() ? 'active' : ''">{{i +
                 1}}</a>
         </template>
-        <a :href="'?_page=' + (parseInt(this._page) + 1) + '&_limit=' + this._limit + '&q=' + this.keyword"
+        <a :href="'?_page=' + (parseInt(this.xpage) + 1) + '&_limit=' + this.xlimit + '&q=' + this.keyword"
            @click.prevent="nextPrev">&raquo;</a>
     </div>
     <snackbar :message="snackbarMessage" :updateSnack="openSnackbar" @resetSnack="openSnackbar = false"/>
@@ -96,15 +90,15 @@
                 modalFooter: null,
                 openSnackbar: false,
                 snackbarMessage: '',
-                _page: 1,
-                _limit: 10,
+                xpage: 1,
+                xlimit: 10,
                 pageNum: [],
                 keyword: ''
             }
         },
         mounted() {
-            this._page = this.getParamPage() === null ? 1 : this.getParamPage();
-            this._limit = this.getParamLimit() === null ? 10 : this.getParamLimit();
+            this.xpage = this.getParamPage() === null ? 1 : this.getParamPage();
+            this.xlimit = this.getParamLimit() === null ? 10 : this.getParamLimit();
             this.getDataAllData();
             this.getData();
         },
@@ -116,15 +110,15 @@
                     .then(res => res.json())
                     .then(json => {
                         let arr = [];
-                        let totalPg = Math.ceil(json.length / this._limit);
+                        let totalPg = Math.ceil(json.length / this.xlimit);
                         for (let i = 0; i < totalPg; i++) {
-                            arr.push("?_page=" + (i + 1) + "&_limit=" + this._limit + "&q=" + this.keyword);
+                            arr.push("?_page=" + (i + 1) + "&_limit=" + this.xlimit + "&q=" + this.keyword);
                         }
                         this.pageNum = arr;
                     });
             },
             getData() {
-                fetch('http://localhost:3002/posts?_page=' + this._page + '&_limit=' + this._limit + '&q=' + this.keyword, {
+                fetch('http://localhost:3002/posts?_page=' + this.xpage + '&_limit=' + this.xlimit + '&q=' + this.keyword, {
                     method: 'GET'
                 })
                     .then(res => res.json())
@@ -176,13 +170,13 @@
             nextPrev(e) {
                 let uri = new URL(e.target.href);
                 window.history.pushState('', '', uri.search);
-                this._page = uri.searchParams.get('_page');
+                this.xpage = uri.searchParams.get('_page');
                 this.getDataAllData();
                 this.getData();
             },
             search() {
-                this._page = 1;
-                window.history.pushState('', '', '?_page=' + this._page + '&_limit=' + this._limit + '&q=' + this.keyword);
+                this.xpage = 1;
+                window.history.pushState('', '', '?_page=' + this.xpage + '&_limit=' + this.xlimit + '&q=' + this.keyword);
                 this.getDataAllData();
                 this.getData();
             }
