@@ -11,10 +11,10 @@
         <tr>
             <th colspan="3">
                 <input class="square-input-field"
-                       name="keyword"
+                       v-model="keyword"
                        type="text"
                        placeholder="Pencarian..."/>
-                <button>Cari
+                <button @click="search">Cari
                 </button>
             </th>
         </tr>
@@ -37,6 +37,24 @@
         </tr>
         </tbody>
     </table>
+    <br/>
+    <div class="pagination">
+        <a :href="'?_page=' + (parseInt(this._page) - 1) + '&_limit=' + this._limit + '&q=' + this.keyword"
+           @click.prevent="function(e) {
+                let uri = new URL(e.target.href);
+                window.history.pushState('', '', uri.search);
+                this._page = uri.searchParams.get('_page');
+                this.getDataAllData();
+                this.getData();
+        }">&laquo;</a>
+        <template v-for="v, i in this.pageNum">
+            <a :href="v"
+               @click.prevent="nextPrev" :class="this._page.toString() === (i + 1).toString() ? 'active' : ''">{{i +
+                1}}</a>
+        </template>
+        <a :href="'?_page=' + (parseInt(this._page) + 1) + '&_limit=' + this._limit + '&q=' + this.keyword"
+           @click.prevent="nextPrev">&raquo;</a>
+    </div>
     <snackbar :message="snackbarMessage" :updateSnack="openSnackbar" @resetSnack="openSnackbar = false"/>
     <modal :handleClose="modalShow" :modalShow="modalShow = false"
            width="50%">
@@ -78,16 +96,38 @@
                 modalFooter: null,
                 openSnackbar: false,
                 snackbarMessage: '',
+                _page: 1,
+                _limit: 10,
+                pageNum: [],
+                keyword: ''
             }
         },
         mounted() {
-            this.getData()
+            this._page = this.getParamPage() === null ? 1 : this.getParamPage();
+            this._limit = this.getParamLimit() === null ? 10 : this.getParamLimit();
+            this.getDataAllData();
+            this.getData();
         },
         methods: {
-            getData() {
-                fetch('http://localhost:3002/posts', {
+            getDataAllData() {
+                fetch('http://localhost:3002/posts?q=' + this.keyword, {
                     method: 'GET'
-                }).then(res => res.json())
+                })
+                    .then(res => res.json())
+                    .then(json => {
+                        let arr = [];
+                        let totalPg = Math.ceil(json.length / this._limit);
+                        for (let i = 0; i < totalPg; i++) {
+                            arr.push("?_page=" + (i + 1) + "&_limit=" + this._limit + "&q=" + this.keyword);
+                        }
+                        this.pageNum = arr;
+                    });
+            },
+            getData() {
+                fetch('http://localhost:3002/posts?_page=' + this._page + '&_limit=' + this._limit + '&q=' + this.keyword, {
+                    method: 'GET'
+                })
+                    .then(res => res.json())
                     .then(json => this.posts = json);
             },
             deleteData(id) {
@@ -121,6 +161,30 @@
                 this.modalHeader = 'Add Post';
                 this.modalContent = 'PostForm';
                 this.modalFooter = '* Silahkan isi semua field';
+            },
+            getParams() {
+                let url_string = window.location.href;
+                let url = new URL(url_string);
+                return url
+            },
+            getParamPage() {
+                return this.getParams().searchParams.get("_page");
+            },
+            getParamLimit() {
+                return this.getParams().searchParams.get("_limit");
+            },
+            nextPrev(e) {
+                let uri = new URL(e.target.href);
+                window.history.pushState('', '', uri.search);
+                this._page = uri.searchParams.get('_page');
+                this.getDataAllData();
+                this.getData();
+            },
+            search() {
+                this._page = 1;
+                window.history.pushState('', '', '?_page=' + this._page + '&_limit=' + this._limit + '&q=' + this.keyword);
+                this.getDataAllData();
+                this.getData();
             }
         }
     }
